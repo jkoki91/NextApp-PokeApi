@@ -9,6 +9,7 @@ import { Layout } from "@/components/layouts";
 import { pokeApi } from "@/api";
 import { Pokemon, PokemonListResponse, SmallPokemon } from "@/interfaces";
 import { localFavorites } from "@/utils";
+import { getPokemonInfo } from '@/utils/getPokemonIngo';
 
 interface Props {
     pokemon: Pokemon;
@@ -104,19 +105,23 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
         paths: pokemonsNames.map( name => ({
             params: { name }
         })),
-        fallback: false
+        // fallback: false
+        fallback: 'blocking'
     }
 }
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
 
   const { name } = params as { name: string };
-  const {data} = await pokeApi.get<Pokemon>(`/pokemon/${name}`);
-
-  const pokemon = {
-    id: data.id,
-    name: data.name,
-    sprites: data.sprites
+  const pokemon = await getPokemonInfo( name );
+  
+  if ( !pokemon ) {
+    return {
+      redirect: {
+        destination: '/',
+        permanent: false
+      }
+    }
   }
 
   return{
