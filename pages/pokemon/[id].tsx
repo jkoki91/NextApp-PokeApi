@@ -1,9 +1,14 @@
+import { useState, useEffect } from 'react';
+
 import { GetStaticProps, NextPage, GetStaticPaths } from "next";
 import { Grid, Card, Text, Button, Container, Image } from '@nextui-org/react';
+
+import confetti from 'canvas-confetti';
 
 import { Layout } from "@/components/layouts";
 import { pokeApi } from "@/api";
 import { Pokemon } from "@/interfaces";
+import { localFavorites } from "@/utils";
 
 interface Props {
   pokemon: Pokemon;
@@ -11,8 +16,31 @@ interface Props {
 
 const PokemonPage: NextPage<Props> = ({ pokemon }) => {
 
+  const onToggleFavorite = () => {
+    localFavorites.toggleFavorite( pokemon.id );
+    setIsInFavorites( !isInFavorites );
+
+    if ( isInFavorites ) return;
+
+    confetti({
+      zIndex: 999,
+      particleCount: 100,
+      spread: 190,
+      angle: -100,
+      origin: { x: 1, y: 0 }
+    })
+  }
+  
+  const [isInFavorites, setIsInFavorites] = useState( localFavorites.existInFavorites( pokemon.id ));
+
+  useEffect(() => {
+
+  }, [])
+  
+
+
   return (
-    <Layout title="Algún pokemon">
+    <Layout title={ pokemon.name }>
       <Grid.Container css={{ marginTop: '5px'}} gap={ 2 }>
         <Grid xs={ 12 } sm={ 4 }>
           <Card isHoverable css={{ padding: '30px'}}>
@@ -30,7 +58,9 @@ const PokemonPage: NextPage<Props> = ({ pokemon }) => {
           <Card>
             <Card.Header css={{ display: 'flex', justifyContent: 'space-between'}}>
               <Text h1 transform="capitalize">{ pokemon.name }</Text>
-              <Button color="gradient" ghost>Guardar en favoritos</Button>
+              <Button color="gradient" ghost={ !isInFavorites } onClick={ onToggleFavorite }>
+                { isInFavorites? 'Favorito' : 'Guardar en favoritos' }
+              </Button>
             </Card.Header>
             <Card.Body>
               <Text size={30}>Sprites</Text>
@@ -94,10 +124,16 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { id } = params as { id: string };
   const {data} = await pokeApi.get<Pokemon>(`/pokemon/${id}`);
 
+  const pokemon = {
+    id: data.id,
+    name: data.name,
+    sprites: data.sprites
+  }
+
   return{
     props: { 
-      pokemon: data
-     },
+      pokemon
+     }
   }
 }
 
